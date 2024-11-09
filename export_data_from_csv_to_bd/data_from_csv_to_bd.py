@@ -68,13 +68,6 @@ class DatabaseManager:
                 elif df[column].dtype == 'object':
                     column_type = 'TEXT'
                 
-                column = re.sub(r'[,]', '', column)
-                column = re.sub(r'[.]', '', column)
-                column = re.sub(r'[(]', '', column)
-                column = re.sub(r'[%]', 'perc', column)
-                column = re.sub(r'[)]', '', column)
-                column = re.sub(r'[/]', '_', column)
-                column = re.sub(r'\s+', '_', column)
                 
                 columns.append(f'"{column}" {column_type}')
 
