@@ -21,6 +21,8 @@ def name_of_col_to_norm_view(column):
     column = re.sub(r'[/]', '_', column)
     column = re.sub(r'\s+', '_', column)
     
+    if column.isupper():
+        column = column.lower()
     
     return column
 
@@ -140,16 +142,36 @@ def process_csv_files(csv_files):
     for csv_file_path in csv_files:
             
         df = read_csv_and_convert_mixed_types(csv_file_path)
-        df = df.drop(columns = ['Unnamed: 0'])
-        df.fillna('NULL', inplace=True)
+        #print(df)
+        try:
+            df = df.drop(columns = ['Unnamed: 0'])
             
-        df.columns = [name_of_col_to_norm_view(column) for column in df.columns]
+            df.fillna('NULL', inplace=True)
             
-        table_name = os.path.splitext(os.path.basename(csv_file_path))[0]
+            df.columns = [name_of_col_to_norm_view(column) for column in df.columns]
             
-        db_manager.create_table(table_name, df)
+            #print(df.columns)
+            
+            table_name = os.path.splitext(os.path.basename(csv_file_path))[0]
+            
+            db_manager.create_table(table_name, df)
         
-        db_manager.import_data(table_name, df)
+            db_manager.import_data(table_name, df)
+            
+            
+        except:
+            
+            df.fillna('NULL', inplace=True)
+            
+            df.columns = [name_of_col_to_norm_view(column) for column in df.columns]
+            
+            #print(df.columns)
+            
+            table_name = os.path.splitext(os.path.basename(csv_file_path))[0]
+            
+            db_manager.create_table(table_name, df)
+        
+            db_manager.import_data(table_name, df)
 
         #db_manager.verify_data(table_name)
             
