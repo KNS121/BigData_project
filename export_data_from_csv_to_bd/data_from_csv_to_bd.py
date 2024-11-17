@@ -10,6 +10,10 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import config_to_connection
+from DB_CONNECT import DatabaseConnector
+
+
+
 
 def name_of_col_to_norm_view(column):
     
@@ -35,24 +39,14 @@ class DatabaseManager:
         self.params = params
         self.conn = None
         self.cur = None
+        self.db_connector = DatabaseConnector(params)
 
     def connect(self):
-        try:
-            self.conn = psycopg2.connect(**self.params)
-            self.cur = self.conn.cursor()
-            print("Подключение к базе данных установлено.")
-        
-        except psycopg2.Error as e:
-            print(f"Ошибка подключения к базе данных: {e}")
+        self.db_connector.connect()
 
     def close(self):
-        if self.cur:
-            self.cur.close()
-        if self.conn:
-            self.conn.close()
-            print("Соединение с базой данных закрыто.")
-            
-    
+        self.db_connector.close()
+
             
     def create_table(self, table_name, df):
         
@@ -80,8 +74,9 @@ class DatabaseManager:
             );
             '''
             
-            self.cur.execute(create_table_query)
-            self.conn.commit()
+            self.db_connector.cur.execute(create_table_query)
+            self.db_connector.conn.commit()
+            
             print(f"Таблица {table_name} создана.")
         
         except psycopg2.Error as e:
@@ -103,8 +98,8 @@ class DatabaseManager:
             DELIMITER ','
             CSV;
             '''
-            self.cur.copy_expert(sql=copy_query, file=output)
-            self.conn.commit()
+            self.db_connector.cur.copy_expert(sql=copy_query, file=output)
+            self.db_connector.conn.commit()
             print(f"Данные импортированы в таблицу {table_name}.")
         
         except psycopg2.Error as e:
