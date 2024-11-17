@@ -151,12 +151,7 @@ def process_csv_files(csv_files):
         
         db_manager.import_data(table_name, df)
 
-        db_manager.verify_data(table_name)
+        #db_manager.verify_data(table_name)
             
 
     db_manager.close()
-    
-    
-if __name__ == "__main__":
-    csv_files = Names_of_df_csv.df_names
-    process_csv_files(csv_files)
