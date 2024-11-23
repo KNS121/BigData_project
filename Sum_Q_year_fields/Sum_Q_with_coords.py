@@ -17,41 +17,77 @@ class DataProcessor:
     def create_result_table(self):
         query = """
     CREATE TABLE IF NOT EXISTS Q_with_coords (
-        date_origin VARCHAR(4),
-        Field INTEGER,
-        Well TEXT,
-        Sum_Q_prod FLOAT,
+        date_origin VARCHAR(7),
+        field INTEGER,
+        well TEXT,
+        sum_q_prod FLOAT,
         coordx FLOAT,
         coordy FLOAT
         
     );
     """
         self.db_connector.execute_query(query, fetch_results=False)
-#факт_часы_за_месяц__часы_раб
+
     def insert_data(self):
-        query = """
-    INSERT INTO Q_with_coords (date_origin, Field, Well, Sum_Q_prod, coordx, coordy)
-    SELECT
-        TO_CHAR(TO_DATE(to_tdp.name_of_date_doc_col, 'YYYY-MM-DD'), 'YYYY') AS date_origin,
-        to_tdp.месторождение AS Field,
-        to_tdp.скважина AS Well,
-        SUM(COALESCE(NULLIF(to_tdp.факт_дебит_жидкости_м3_сут::text, 'NULL'), '0')::double precision)*29.3 AS Sum_Q_prod,
-        MAX(COALESCE(NULLIF(to_tdp.coordx::text, 'NULL'), '0')::double precision) AS coordx,
-        MAX(COALESCE(NULLIF(to_tdp.coordy::text, 'NULL'), '0')::double precision) AS coordy
+        query = """          
+    CREATE TEMP TABLE Vrem_Table_1 AS
+  SELECT DISTINCT
+                TO_CHAR(TO_DATE(to_tdp.name_of_date_doc_col, 'YYYY-MM-DD'), 'YYYY-MM') AS date_origin,
+                to_tdp.месторождение AS field,
+                to_tdp.скважина AS well,
+                COALESCE(NULLIF(to_tdp.факт_дебит_жидкости_м3_сут::text, 'NULL'), '0')::double precision AS Q_prod
+
+            FROM
+                to_tdp
+            WHERE
+                to_tdp.факт_дебит_жидкости_м3_сут IS NOT NULL 
+                AND to_tdp.факт_дебит_жидкости_м3_сут <> 'nan' 
+                AND to_tdp.факт_дебит_жидкости_м3_сут <> '0.0'
+                AND to_tdp.факт_дебит_жидкости_м3_сут <> '0';
+
+CREATE TEMP TABLE Vrem_Table_2 AS
+        SELECT DISTINCT
+    
+                to_tdp.месторождение AS field,
+                to_tdp.скважина AS well,
+                MAX(COALESCE(NULLIF(to_tdp.coordx::text, 'NULL'), '0')::double precision) AS coordx,
+                MAX(COALESCE(NULLIF(to_tdp.coordy::text, 'NULL'), '0')::double precision) AS coordy
+       
+            FROM
+                to_tdp
+                GROUP BY
+                    to_tdp.месторождение,
+                    to_tdp.скважина;
+                    
+                    
+    INSERT INTO Q_with_coords (date_origin, field, well, sum_q_prod, coordx, coordy)
+    SELECT 
+    TO_CHAR(TO_DATE(Vrem_Table_1.date_origin,'YYYY-MM'), 'YYYY') AS date_origin,
+    Vrem_Table_1.field AS field, 
+    Vrem_Table_1.well AS well, 
+    SUM(Vrem_Table_1.Q_prod)*29.3 AS sum_q_prod,
+    Vrem_Table_2.coordx AS coordx,
+    Vrem_Table_2.coordy AS coordy
 
     FROM
-        to_tdp AS to_tdp
+    Vrem_Table_1
+
+
+    LEFT JOIN Vrem_Table_2 ON Vrem_Table_1.field = Vrem_Table_2.field AND
+    Vrem_Table_1.well = Vrem_Table_2.well
     WHERE
-        to_tdp.факт_дебит_жидкости_м3_сут IS NOT NULL
-        AND to_tdp.факт_дебит_жидкости_м3_сут <> 'NULL'
-        AND to_tdp.факт_дебит_жидкости_м3_сут <> '0'
-        AND to_tdp.факт_дебит_жидкости_м3_сут <> '0.0'
-        AND to_tdp.факт_дебит_жидкости_м3_сут <> 'nan'
-        AND to_tdp.факт_дебит_жидкости_м3_сут <> 'NaN'
+    Vrem_Table_1.Q_prod <> 0
+
     GROUP BY
-        TO_CHAR(TO_DATE(to_tdp.name_of_date_doc_col, 'YYYY-MM-DD'), 'YYYY'),
-        to_tdp.месторождение,
-        to_tdp.скважина
+    TO_CHAR(TO_DATE(Vrem_Table_1.date_origin,'YYYY-MM'), 'YYYY'),
+    Vrem_Table_1.field, 
+    Vrem_Table_1.well, 
+    Vrem_Table_2.coordx,
+    Vrem_Table_2.coordy
+    ORDER BY
+    TO_CHAR(TO_DATE(Vrem_Table_1.date_origin,'YYYY-MM'), 'YYYY'),
+    Vrem_Table_1.field;
+           
     """
     
         self.db_connector.execute_query(query, fetch_results=False)
