@@ -36,7 +36,7 @@ class DataProcessor:
                 to_tdp.месторождение AS field,
                 to_tdp.скважина AS well,
                 COALESCE(NULLIF(to_tdp.факт_дебит_жидкости_м3_сут::text, 'NULL'), '0')::double precision AS Q_prod
-
+                
             FROM
                 to_tdp
             WHERE
