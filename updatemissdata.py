@@ -2,7 +2,7 @@ def update_missing_data(your_table,
                         date_miss_start, date_miss_end,
                         date_previous_start, date_previous_end,
                         column_miss, column_orient):
-    print(1)
+    
     query = f"""
     WITH missing_data AS (
     SELECT
