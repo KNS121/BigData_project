@@ -3,103 +3,42 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import config_to_connection
-from DB_CONNECT import DatabaseConnector
+from Read_SQL import read_sql_file
+from DATAPROCESSOR import DataProcessor
+from read_json_config import read_json_file
 
-
-#факт_время_работы__сут
-
-class DataProcessor:
-    def __init__(self, db_params):
-        self.db_connector = DatabaseConnector(db_params)
-
-    def connect(self):
-        self.db_connector.connect()
-
-    def create_result_table(self):
-        query = """
-        CREATE TABLE IF NOT EXISTS avgtime (
-            date_origin VARCHAR(7),
-            field INTEGER,
-            avg_time_prod FLOAT,
-            avg_time_inj FLOAT
-        );
-        """
-        self.db_connector.execute_query(query, fetch_results=False)
-        
-        
-    def insert_data(self):
-        query = """
-        
-        CREATE TEMP TABLE Vrem_Table_1 AS
-  SELECT DISTINCT
-                TO_CHAR(TO_DATE(to_tdp.name_of_date_doc_col, 'YYYY-MM-DD') - INTERVAL '1' MONTH, 'YYYY-MM') AS date_origin,
-                to_tdp.месторождение AS field,
-                to_tdp.скважина AS well_prod,
-                '' AS well_inj,
-                COALESCE(NULLIF(to_tdp.факт_время_работы__сут::text, 'NULL'), '0')::double precision AS days_prod,
-                0 as days_inj
-                
-            FROM
-                to_tdp
-            WHERE
-                to_tdp.факт_время_работы__сут IS NOT NULL 
-                AND to_tdp.факт_время_работы__сут <> 'nan' 
-                AND to_tdp.факт_время_работы__сут <> '0.0'
-                AND to_tdp.факт_время_работы__сут <> '0'
-              
-            UNION
-               
-            SELECT DISTINCT
-                TO_CHAR(TO_DATE(to_tdp_ppd.name_of_date_doc_col, 'YYYY-MM-DD') - INTERVAL '1' MONTH, 'YYYY-MM') AS date_origin,
-                to_tdp_ppd.месторождение AS field,
-                '' AS well_prod,
-                to_tdp_ppd.скважина AS well_inj,
-                0 AS days_prod,
-                COALESCE(NULLIF(to_tdp_ppd.факт_время_работы___сут::text, 'NULL'), '0')::double precision AS days_inj
-                
-            FROM
-                to_tdp_ppd
-            WHERE
-                to_tdp_ppd.факт_время_работы___сут IS NOT NULL 
-                AND to_tdp_ppd.факт_время_работы___сут <> 'nan' 
-                AND to_tdp_ppd.факт_время_работы___сут <> '0.0'
-                AND to_tdp_ppd.факт_время_работы___сут <> '0';
-                
+def main():
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    file_path_json = os.path.join(project_root, 'config_to_connection.json')
     
-    INSERT INTO avgtime (date_origin, field, avg_time_prod, avg_time_inj)
-    SELECT 
-        Vrem_Table_1.date_origin AS date_origin,
-        Vrem_Table_1.field AS field, 
+    db_params = read_json_file(file_path_json)
     
-        SUM(Vrem_Table_1.days_prod)/COUNT(Vrem_Table_1.well_prod) AS avg_time_prod,
-        SUM(Vrem_Table_1.days_inj)/COUNT(Vrem_Table_1.well_inj) AS avg_time_inj
-
-    FROM
-    Vrem_Table_1
+    query_create_table = read_sql_file('create_result_table_time_analys.sql')
+    query_insert_data = read_sql_file('insert_into_result_table_time_analys.sql')
     
-    GROUP BY
-    Vrem_Table_1.date_origin,
-    Vrem_Table_1.field
-
-    ORDER BY
-    Vrem_Table_1.field,
-    Vrem_Table_1.date_origin;
+    try:
+        data_proc = DataProcessor(db_params['db_params'], query_create_table, query_insert_data)
+        data_proc.connect()
+        data_proc.create_result_table()
+        data_proc.insert_data()
+        print('Данные обработаны.')
         
-    """
-        
-        self.db_connector.execute_query(query, fetch_results=False)
-        self.db_connector.commit()
+        try:
+            data_proc.up_miss("avgtime", 
+                        "2015-12-01", "2017-04-01",
+                        "2014-11-01", "2015-11-01",
+                        "avg_time_inj", "avg_time_prod")
+            
+            print('Восстановлены пропущенные значения.')
+            data_proc.close()
+        data_proc.close()
+        except:
+            print('Не удалось восстановить пропущенные значения.')
+            data_proc.close()
+            
+    except:
+        print("Не удалось выполнить обработку данных.")
+        data_proc.close()
 
-    def close(self):
-        self.db_connector.close()
-
-def create_table_Q_prod_and_inj():
-    db_params = config_to_connection.db_params
-    data_proc = DataProcessor(db_params)
-    data_proc.connect()
-    data_proc.create_result_table()
-    data_proc.insert_data()
-    data_proc.close()
-
-    print("Таблицы созданы и данные вставлены успешно.")
+if __name__ == "__main__":
+    main()
