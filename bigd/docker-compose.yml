@@ -1,0 +1,86 @@
+version: '3'
+
+services:
+  coordinator:
+    container_name: "citus_master"
+    build:
+      context: .
+      dockerfile: Dockerfile.citus
+    ports:
+      - '5432:5432'
+    labels:
+      - "com.citusdata.role=Master"
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'password'
+      PGUSER: 'postgres'
+      PGPASSWORD: 'password'
+      POSTGRES_HOST_AUTH_METHOD: 'trust'
+    volumes:
+      - 'coordinator_data:/var/lib/postgresql/data'
+    networks:
+      - citus_network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.citus
+    labels:
+      - "com.citusdata.role=Worker"
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'password'
+      PGUSER: 'postgres'
+      PGPASSWORD: 'password'
+      POSTGRES_HOST_AUTH_METHOD: 'trust'
+    volumes:
+      - 'worker_data:/var/lib/postgresql/data'
+      - 'healthcheck-volume:/healthcheck'
+    depends_on:
+      - manager
+    command: "/wait-for-manager.sh"
+    networks:
+      - citus_network
+
+  manager:
+    container_name: "citus_manager"
+    image: "citusdata/membership-manager:0.3.0"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - 'healthcheck-volume:/healthcheck'
+    depends_on:
+      - coordinator
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'password'
+      PGUSER: 'postgres'
+      PGPASSWORD: 'password'
+      POSTGRES_HOST_AUTH_METHOD: 'trust'
+    networks:
+      - citus_network
+
+  python_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.csv_to_bd
+    depends_on:
+      - coordinator
+      - worker
+    volumes:
+      - ./application/export_data_from_csv_to_bd:/app/export_data_from_csv_to_bd
+      - ./application/common:/app
+      - ./application/Task4:/app/Task4
+      - ./application/Task1:/app/Task1
+      - ./application/Task2:/app/Task2
+      - ./output:/app/output
+    networks:
+      - citus_network
+
+volumes:
+  coordinator_data:
+  worker_data:
+  healthcheck-volume:
+
+networks:
+  citus_network:
+    driver: bridge
