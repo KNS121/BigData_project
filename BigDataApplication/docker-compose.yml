@@ -1,0 +1,51 @@
+# This file is auto generated from it's template,
+# see citusdata/tools/packaging_automation/templates/docker/latest/docker-compose.tmpl.yml.
+version: "3"
+
+services:
+  master:
+    container_name: "${COMPOSE_PROJECT_NAME:-citus}_master"
+    image: "citusdata/citus:12.1.6"
+    ports: ["${COORDINATOR_EXTERNAL_PORT:-5432}:5432"]
+    labels: ["com.citusdata.role=Master"]
+    environment: &AUTH
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "password"
+      PGUSER: "${POSTGRES_USER:-postgres}"
+      PGPASSWORD: "password"
+      POSTGRES_HOST_AUTH_METHOD: "${POSTGRES_HOST_AUTH_METHOD:-trust}"
+  worker:
+    image: "citusdata/citus:12.1.6"
+    labels: ["com.citusdata.role=Worker"]
+    depends_on: [manager]
+    environment: *AUTH
+    command: "/wait-for-manager.sh"
+    volumes:
+      - healthcheck-volume:/healthcheck
+  manager:
+    container_name: "${COMPOSE_PROJECT_NAME:-citus}_manager"
+    image: "citusdata/membership-manager:0.3.0"
+    volumes:
+      - "${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock"
+      - healthcheck-volume:/healthcheck
+    depends_on: [master]
+    environment: *AUTH
+  python_app:
+    container_name: "${COMPOSE_PROJECT_NAME:-citus}_python_app"
+    build:
+      context: .
+      dockerfile: Dockerfile.py_app
+    depends_on:
+      - master
+      - worker
+    volumes:
+      - ./application/export_data_from_csv_to_bd:/app/export_data_from_csv_to_bd
+      - ./application/common:/app
+      - ./application/Task1:/app/Task1
+      - ./application/Task2:/app/Task2
+      - ./application/Task3:/app/Task3
+      - ./application/Task4:/app/Task4
+      - ./output:/app/output
+    environment: *AUTH
+volumes:
+  healthcheck-volume:
