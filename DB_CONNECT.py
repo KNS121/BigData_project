@@ -1,5 +1,4 @@
 import psycopg2
-import config_to_connection
 
 class DatabaseConnector:
     

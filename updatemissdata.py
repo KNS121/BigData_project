@@ -1,10 +1,9 @@
-def update_missing_data(your_table, 
+def update_missing_data(your_table,
                         date_miss_start, date_miss_end,
                         date_previous_start, date_previous_end,
                         column_miss, column_orient):
     
-    query = f"""
-    WITH missing_data AS (
+    query = f"""WITH missing_data AS (
     SELECT
         date_origin,
         field,
@@ -26,6 +25,7 @@ previous_year_data AS (
         {your_table}
     WHERE
         TO_DATE(date_origin, 'YYYY-MM-DD') >= '{date_previous_start}' AND TO_DATE(date_origin, 'YYYY-MM-DD') <= '{date_previous_end}'
+        AND {column_miss} <> 0 AND {column_orient} <> 0
 ),
 matched_data AS (
     SELECT
