@@ -5,3 +5,4 @@ Names_of_df_csv.py
 __pycache__/
 .ipynb_checkpoints/
 *.json
+.idea
