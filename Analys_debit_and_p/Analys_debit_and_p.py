@@ -25,21 +25,22 @@ def main():
         print('Данные обработаны.')
         
         try:
-            data_proc.up_orient("debit_and_p",
-                        "1992-01-01", "2023-08-01",
-                        "1992-01-01", "2023-08-01",
-                        "sum_q_prod")
+            data_proc.up_miss("debit_and_p",
+                        "2015-12-01", "2017-04-01",
+                        "2018-01-01", "2019-01-01",
+                        "sum_q_inj", "sum_q_prod")
             print('Восстановлены пропущенные значения sum_q_prod.')
 
+            data_proc.execute_query(update_diff_q(), False)
+            print('Обновлены данные разницы давлений.')
+
             data_proc.up_miss("debit_and_p",
-                        "1992-01-01", "2023-08-01",
-                        "1992-01-01", "2023-08-01",
-                        "sum_q_inj", "sum_q_prod")
-            
+                        "2015-12-01", "2017-04-01",
+                        "2018-01-01", "2019-01-01",
+                        "avg_p_plast", "diff_q")
+
             print('Восстановлены пропущенные значения.')
 
-            data_proc.execute_query(update_diff_q(), False)
-            print('Обновлена колонка diff_q.')
             data_proc.close()
         
         except:
