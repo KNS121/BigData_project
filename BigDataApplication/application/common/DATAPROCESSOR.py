@@ -18,7 +18,7 @@ class DataProcessor:
 
     def create_result_table(self):
         self.db_connector.execute_query(self.query_create_table, fetch_results=False)
-
+        self.db_connector.commit()
     def insert_data(self):
         self.db_connector.execute_query(self.query_insert_data, fetch_results=False)
         self.db_connector.commit()
@@ -36,6 +36,8 @@ class DataProcessor:
         
         self.db_connector.execute_query(query_update_missing, fetch_results=False)
         self.db_connector.commit()
-    
+    def execute_query(self, query, fetch_results=True):
+        self.db_connector.execute_query(query, fetch_results)
+        self.db_connector.commit()    
     def close(self):
         self.db_connector.close()

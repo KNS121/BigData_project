@@ -45,6 +45,7 @@ services:
       - ./application/Task2:/app/Task2
       - ./application/Task3:/app/Task3
       - ./application/Task4:/app/Task4
+      - ./application/Task5:/app/Task5
       - ./output:/app/output
     environment: *AUTH
 volumes:

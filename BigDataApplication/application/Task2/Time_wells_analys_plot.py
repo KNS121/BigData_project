@@ -98,7 +98,7 @@ def main_plot(field_value):
     file_path_json = os.path.join(project_root, 'config_to_connection.json')
     
     db_params = read_json_file(file_path_json)
-    print(db_params['db_params'])
+    #print(db_params['db_params'])
     query = f"SELECT date_origin, avg_time_prod, avg_time_inj FROM avgtime WHERE avgtime.field = {field_value} ORDER BY avgtime.date_origin;"
     
     db_conn = DatabaseConnector(db_params['db_params'])

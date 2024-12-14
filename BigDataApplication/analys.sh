@@ -34,9 +34,9 @@ run_task() {
         4)
             sudo docker-compose exec python_app python /app/Task4/Sum_Q_with_coords_plot.py $field $year
             ;;
-        #5)
-        #    sudo docker-compose exec python_app python /app/Task5/some_other_script.py $field
-        #    ;;
+        5)
+            sudo docker-compose exec python_app python /app/Task5/Analys_debit_and_p_plot.py $field
+            ;;
         *)
             echo "Неверный номер задачи"
             exit 1
@@ -60,7 +60,7 @@ measure_time() {
 # Если task_number равно 'a', выполнить все задачи для всех месторождений и годов
 if [[ $task_number == "a" ]]; then
     measure_time bash -c '
-    for task in 1 2 3 4; do
+    for task in 1 2 3 4 5; do
         for field in 6 7; do
             if [[ $task == 4 ]]; then
                 for year in {1992..2023}; do
