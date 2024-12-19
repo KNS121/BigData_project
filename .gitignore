@@ -1,4 +1,3 @@
-*.csv
 *.ipynb
 config_to_connection.py
 Names_of_df_csv.py
